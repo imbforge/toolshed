@@ -1,0 +1,5 @@
+useDynLib(InterOp)
+exportPattern("^[[:alpha:]]+")
+importFrom(Rcpp, evalCpp)
+import(ggplot2)
+import(reshape)
