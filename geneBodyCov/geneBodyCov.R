@@ -58,7 +58,7 @@ xtile <- function (x, n, width, ...) {
 }
 
 # read and strip input gtf file
-gtf <- import.gff(GENESGTF,format="gtf",asRangedData=F,feature.type="exon")
+gtf <- import.gff(GENESGTF,format="gtf",feature.type="exon")
 gtf <- unlist(reduce(split(gtf,elementMetadata(gtf)$gene_id)))
 gtf <- unlist(xtile(gtf,width=1))
 

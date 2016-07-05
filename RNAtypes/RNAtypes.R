@@ -94,7 +94,7 @@ library(parallel)
 ##
 ## Read in the GTF file
 ##
-gencode <- import.gff(GTF,format="gtf",asRangedData=F,feature.type=FTYPE)
+gencode <- import.gff(GTF,format="gtf",feature.type=FTYPE)
 if(!any(grepl(FTYPECOL,colnames(elementMetadata(gencode)))))	stop("GTF file doesn't contain info about the biotype")
 
 # extract unique gene biotypes
