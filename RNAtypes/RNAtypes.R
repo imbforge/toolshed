@@ -187,20 +187,20 @@ p  <- function(x,main,normalize=T) {
 		geom_bar(stat="identity") + 
 		ggtitle(main) +
 		theme_bw() + 
-		theme(text=element_text(size=9),axis.text.x=element_text(angle=90,vjust=1))
+		theme(axis.text.x=element_text(angle=90,vjust=1))
 }
 
 # plots
-png(paste0(OUT,".counts.raw.png"))
+png(paste0(OUT,".counts.raw.png"), width=960, height=960)
 write.csv(d.reads,file=paste0(OUT,".counts.raw.csv"))
 print(p(d.reads,"Counts (raw)",normalize=F))
 dev.off()
 
-png(paste0(OUT,".counts.per.png"))
+png(paste0(OUT,".counts.per.png"), width=960, height=960)
 print(p(d.reads,"Counts (percentage)",normalize=T))
 dev.off()
 
-png(paste0(OUT,".counts.rpk.png"))
+png(paste0(OUT,".counts.rpk.png"), width=960, height=960)
 write.csv(d.rpk,file=paste0(OUT,".counts.rpk.csv"))
 print(p(d.rpk  ,"RPK",normalize=F))
 dev.off()
