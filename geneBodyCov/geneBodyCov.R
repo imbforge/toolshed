@@ -101,7 +101,7 @@ avg <- apply(rangeCov, 2, mean) # and calculate the average per bin
 avg <- avg / max(avg) # which is then normalized again, as it seems to be in geneBodyCoverage.py from RSeQC
 
 # and plot
-png(paste0(OUTDIR, "/", gsub(".bam$", "_geneBodyCov.png", basename(BAM))), width=960, height=960)
+png(paste0(OUTDIR, "/", gsub(".bam$", "_geneBodyCov.png", basename(BAM))))
 plot(1:100, avg, type="l", ylim=c(0, 1), main=basename(BAM), xlab="gene length percentile 5'->3'", ylab="average coverage")
 lines(lowess(1:100, avg, f=1/4), col="red", lwd=2)
 dev.off()
