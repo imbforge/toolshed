@@ -1,8 +1,19 @@
 ########################################
 ##
-## Calcultate the gene body coverage:
-## reimplementation of geneBodyCoverage from RSeQC 'cause it sucks for anything
-## else than their precompiled gene models (human, mouse, fly, fish)
+##  Reimplementation of geneBodyCoverage
+## --
+## Who:  Sergi Sayols
+## When: 25-aug-2016
+## --
+## Input:
+##   <bam=x.bam>
+##   <gtf=genes.gtf>
+##   <stranded=yes|no|reverse>
+##   <outdir=./>
+##   <threads=1>")
+## --
+## Todo:
+##   multiple input bam files
 ##
 ########################################
 options(stringsAsFactors=F)
@@ -10,103 +21,87 @@ library(ShortRead)
 library(GenomicRanges)
 library(rtracklayer)
 library(parallel)
+library(RColorBrewer)
 
 ##
 ## Parse input parms
 ##
-parseArgs <- function(args,string,default=NULL,convert="as.character") {
+parseArgs <- function(args, string, default=NULL, convert="as.character") {
 
-	if(length(i <- grep(string,args,fixed=T)) == 1) 
-		return(do.call(convert,list(gsub(string,"",args[i]))))
+	if(length(i <- grep(string, args, fixed=T)) == 1) 
+		return(do.call(convert, list(gsub(string, "", args[i]))))
     
-	if(!is.null(default)) default else do.call(convert,list(NA))
+	if(!is.null(default)) default else do.call(convert, list(NA))
 }
 
 args <- commandArgs(trailingOnly=T)
-BAM      <- parseArgs(args,"bam=","")	# the bam file
-GENESGTF <- parseArgs(args,"gtf=","")   # the gtf file
-PAIRED   <- parseArgs(args,"paired=","no") # is the experiment strand specific?
-STRANDED <- parseArgs(args,"stranded=","no") # is the experiment strand specific?
-OUTDIR   <- parseArgs(args,"outdir=" ,"./") # output directory
-THREADS  <- parseArgs(args,"threads=",1,"as.numeric") # number of threads to be used
+BAM      <- parseArgs(args, "bam=", "")	# the bam file
+GENESGTF <- parseArgs(args, "gtf=", "")   # the gtf file
+PAIRED   <- parseArgs(args, "paired=", "no") # is the experiment strand specific?
+STRANDED <- parseArgs(args, "stranded=", "no") # is the experiment strand specific?
+OUTDIR   <- parseArgs(args, "outdir=" , "./") # output directory
+THREADS  <- parseArgs(args, "threads=", 1, "as.numeric") # number of threads to be used
 
 print(args)
 if(length(args) == 0 | args[1] == "-h" | args[1] == "--help")
 	stop("Rscript geneBodyCov.R <bam=x.bam> <gtf=genes.gtf> <stranded=no> <outdir=./> <threads=1>")
-if(!file.exists(BAM)) stop(paste("File",BAM,"does NOT exist"))
-if(!file.exists(GENESGTF)) stop(paste("File",GENESGTF,"does NOT exist"))
-if(is.na(PAIRED)   | !(grepl("no|yes",PAIRED))) stop("Paired has to be no|yes")
-if(is.na(STRANDED) | !(grepl("no|yes|reverse",STRANDED))) stop("Stranded has to be no|yes|reverse")
+if(!file.exists(BAM)) stop(paste("File", BAM, "does NOT exist"))
+if(!file.exists(GENESGTF)) stop(paste("File", GENESGTF, "does NOT exist"))
+if(is.na(PAIRED)   | !(grepl("no|yes", PAIRED))) stop("Paired has to be no|yes")
+if(is.na(STRANDED) | !(grepl("no|yes|reverse", STRANDED))) stop("Stranded has to be no|yes|reverse")
 if(is.na(THREADS))  stop("Threads has to be a number")
 
 ##
 ## Read and flatten the gtf file
 ##
-# our own implementation of the tile function, to include also the gene name
-# check the original code with showMethod("tile") and selectMethod("tile","GRanges")
-xtile <- function (x, n, width, ...) { 
-	sn <- seqnames(x) 
-	strand <- strand(x) 
-	x <- ranges(x)
-	genes <- names(x)
-	tiles <- IRanges::tile(x,n,width,...)
-	gr <- GRanges(rep(sn, elementLengths(tiles)),		# seqnames
-				  unlist(tiles),						# ranges
-				  rep(strand,elementLengths(tiles)),	# strand
-				  rep(genes,elementLengths(tiles)))		# gene names
-#	relist(gr, tiles)	# do not provide as a GRangesList. GRanges more suitable for countOverlaps
-}
-
 # read and strip input gtf file
-gtf <- import.gff(GENESGTF,format="gtf",feature.type="exon")
-gtf <- unlist(reduce(split(gtf,elementMetadata(gtf)$gene_id)))
-gtf <- unlist(xtile(gtf,width=1))
+gtf <- function() import.gff(GENESGTF, format="gtf", feature.type="exon")
+gtf <- switch(STRANDED,
+              yes=gtf(),
+              no=unstrand(gtf()),
+              reverse=invertStrand(gtf()))
+gtf <- reduce(split(gtf, elementMetadata(gtf)$gene_id))
+gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes shorter than 100bp
 
 ##
-## read input bam file count overlaps between bam and gtf
+## read input bam file and calculate the coverage
 ##
-aln <- switch(PAIRED,
-			  no =readGAlignments    (BAM,param=ScanBamParam(tag="NH")),
-			  yes=readGAlignmentPairs(BAM,param=ScanBamParam(tag="NH")))
-# discard multihits
-aln  <- switch(PAIRED,
-			   no =aln[elementMetadata(aln)$NH == 1,],
-			   yes=aln[elementMetadata(first(aln))$NH == 1,])	# both mates have the same NH
-# change strand if reverse
-if(STRANDED == "reverse") strand(aln) <- ifelse(strand(aln) == "+","-","+")
-# and count reads on features
-counts <- countOverlaps(gtf,aln,ignore.strand=(STRANDED == "no"))
-
-# Normalize gene lengths to 0-100 bins
-ncounts <- tapply(counts,elementMetadata(gtf)[,1],function(x) {
-
-	# kick out gene if it was shorter than 100bp
-	if(length(x) < 100) return(rep(0,100))
-
-	# calculate the number of positions included in each bin
-	w <- length(x) / 100	# has to be corrected for decimals
-	r <- rep(floor(w),100)	# number of bp without correcting for decimals
-	p <- sample(1:length(r),length(x) - sum(r),replace=F)
-	r[p] <- floor(w) + 1	# add 1 bp to some selected bins
-
-	# assign every bp to a bin and calculate the average
-	xnorm <- tapply(x,rep(1:100,r),mean)
-})
-
-#ncounts <- matrix(unlist(ncounts),nrow=length(ncounts),ncol=100,byrow=T)
-ncounts <- do.call(rbind,ncounts)
+cvg <- coverage(switch(PAIRED,
+                       no =readGAlignments    (BAM, param=ScanBamParam(tagFilter=list("NH"=1))),
+                       yes=readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1)))))
 
 ##
-## plot the gene body coverage
+## subset from the aln only the gene regions, and calculate the coverage
 ##
-# get rid of non expressed genes
-ncounts <- ncounts[rowSums(ncounts) > 0,]
+rangeCov <- mclapply(gtf, function(gene) {
+  
+  # get the absolute covarage
+  s <- runValue(strand(gene))[[1L]]
+  if((STRANDED != "reverse" && s == "-") || (STRANDED == "reverse" && s == "+")) {
+    x <- unlist(rev(cvg[gene]), use.names=FALSE) 
+  } else {
+    x <-unlist(cvg[gene], use.names=FALSE) 
+  }
+  
+  # split the gene in 100 binsm and calculate the avg coverage per bin
+  bins <- cut(1:length(x), 100)
+  x <- c(rep(runValue(x), runLength(x)))  # uncompress
+  x <- tapply(x, bins, mean)
+  
+  # calculate the percentage of coverage per position
+  if(max(x) > 0) x / max(x) else x
+}, mc.cores=THREADS)
 
-# make per position (per bin) average coverage across all genes
-ncounts.avg <- apply(ncounts,2,mean)
+##
+## calculate the per bin average across all genes
+##
+rangeCov <- do.call(rbind, rangeCov)  # flatten the list
+rangeCov <- rangeCov[apply(rangeCov, 1, function(x) any(x > 0)), ]  # suppress not expressed genes
+avg <- apply(rangeCov, 2, mean) # and calculate the average per bin
+avg <- avg / max(avg) # which is then normalized again, as it seems to be in geneBodyCoverage.py from RSeQC
 
 # and plot
-pdf(paste0(OUTDIR,"/",gsub(".bam","_geneBodyCov.pdf",basename(BAM))))
-plot(1:100,ncounts.avg,type='l',yaxt="n",main=basename(BAM),xlab="gene length percentage",ylab="average coverage")
-lines(lowess(1:100,ncounts.avg,f=1/4),col='red',lwd=2)
+png(paste0(OUTDIR, "/", gsub(".bam$", "_geneBodyCov.png", basename(BAM))), width=960, height=960)
+plot(1:100, avg, type="l", ylim=c(0, 1), main=basename(BAM), xlab="gene length percentile 5'->3'", ylab="average coverage")
+lines(lowess(1:100, avg, f=1/4), col="red", lwd=2)
 dev.off()
