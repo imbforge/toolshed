@@ -8,6 +8,7 @@
 ## Input:
 ##   <bam=x.bam>
 ##   <gtf=genes.gtf>
+##   <paired=yes|no>
 ##   <stranded=yes|no|reverse>
 ##   <outdir=./>
 ##   <threads=1>")
@@ -21,7 +22,6 @@ library(ShortRead)
 library(GenomicRanges)
 library(rtracklayer)
 library(parallel)
-library(RColorBrewer)
 
 ##
 ## Parse input parms
@@ -71,11 +71,11 @@ cvg <- coverage(switch(PAIRED,
                        yes=readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1)))))
 
 ##
-## subset from the aln only the gene regions, and calculate the coverage
+## subset from the coverage only the gene regions, and calculate the binned coverage
 ##
 rangeCov <- mclapply(gtf, function(gene) {
   
-  # get the absolute covarage
+  # get the absolute covarage for the current gene
   s <- runValue(strand(gene))[[1L]]
   if((STRANDED != "reverse" && s == "-") || (STRANDED == "reverse" && s == "+")) {
     x <- unlist(rev(cvg[gene]), use.names=FALSE) 
@@ -83,7 +83,7 @@ rangeCov <- mclapply(gtf, function(gene) {
     x <-unlist(cvg[gene], use.names=FALSE) 
   }
   
-  # split the gene in 100 binsm and calculate the avg coverage per bin
+  # split the gene in 100 bins and calculate the avg coverage per bin
   bins <- cut(1:length(x), 100)
   x <- c(rep(runValue(x), runLength(x)))  # uncompress
   x <- tapply(x, bins, mean)
