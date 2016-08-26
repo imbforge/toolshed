@@ -14,7 +14,8 @@
 ##   <threads=1>")
 ## --
 ## Todo:
-##   multiple input bam files
+##   -Multiple input bam files
+##   -Extend some bp to the 5' and 3' ends
 ##
 ########################################
 options(stringsAsFactors=F)
