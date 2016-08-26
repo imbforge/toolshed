@@ -56,20 +56,20 @@ if(is.na(THREADS))  stop("Threads has to be a number")
 ## Read and flatten the gtf file
 ##
 # read and strip input gtf file
-gtf <- function() import.gff(GENESGTF, format="gtf", feature.type="exon")
-gtf <- switch(STRANDED,
-              yes=gtf(),
-              no=unstrand(gtf()),
-              reverse=invertStrand(gtf()))
+gtf <- import.gff(GENESGTF, format="gtf", feature.type="exon")
 gtf <- reduce(split(gtf, elementMetadata(gtf)$gene_id))
 gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes shorter than 100bp
 
 ##
 ## read input bam file and calculate the coverage
 ##
-cvg <- coverage(switch(PAIRED,
-                       no =readGAlignments    (BAM, param=ScanBamParam(tagFilter=list("NH"=1))),
-                       yes=readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1)))))
+aln <- function() switch(PAIRED,
+                         no =readGAlignments    (BAM, param=ScanBamParam(tagFilter=list("NH"=1))),
+                         yes=readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1))))
+cvg <- coverage(switch(STRANDED,
+                       yes=aln(),
+                       no=unstrand(aln()),
+                       reverse=invertStrand(aln())))
 
 ##
 ## subset from the coverage only the gene regions, and calculate the binned coverage
@@ -77,11 +77,11 @@ cvg <- coverage(switch(PAIRED,
 rangeCov <- mclapply(gtf, function(gene) {
   
   # get the absolute covarage for the current gene
-  s <- runValue(strand(gene))[[1L]]
+  s <- as.character(runValue(strand(gene))[[1L]])
   if((STRANDED != "reverse" && s == "-") || (STRANDED == "reverse" && s == "+")) {
-    x <- unlist(rev(cvg[gene]), use.names=FALSE) 
+    x <- rev(unlist(cvg[gene], use.names=FALSE))
   } else {
-    x <-unlist(cvg[gene], use.names=FALSE) 
+    x <- unlist(cvg[gene], use.names=FALSE) 
   }
   
   # split the gene in 100 bins and calculate the avg coverage per bin
