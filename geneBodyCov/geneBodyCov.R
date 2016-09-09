@@ -63,13 +63,21 @@ gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes short
 ##
 ## read input bam file and calculate the coverage
 ##
-aln <- function() switch(PAIRED,
-                         no =readGAlignments    (BAM, param=ScanBamParam(tagFilter=list("NH"=1))),
-                         yes=readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1))))
-cvg <- coverage(switch(STRANDED,
-                       yes=aln(),
-                       no=unstrand(aln()),
-                       reverse=invertStrand(aln())))
+cvg <-
+    if(PAIRED == "no") {
+        aln <- function() readGAlignments(BAM, param=ScanBamParam(tagFilter=list("NH"=1)))
+        coverage(switch(STRANDED,
+                        no=unstrand(aln()),
+                        yes=aln(),
+                        reverse=invertStrand(aln())))
+    } else {
+        aln <- readGAlignmentPairs(BAM, param=ScanBamParam(tagFilter=list("NH"=1)))
+        strandMode(aln) <- switch(STRANDED,
+                                  no=0,
+                                  yes=1,
+                                  reverse=2)
+        coverage(aln)
+    }
 
 ##
 ## subset from the coverage only the gene regions, and calculate the binned coverage
