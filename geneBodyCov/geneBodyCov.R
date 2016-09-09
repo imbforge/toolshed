@@ -76,7 +76,9 @@ cvg <-
                                   no=0,
                                   yes=1,
                                   reverse=2)
-        coverage(aln)
+        x <- coverage(aln)
+        rm(aln); gc()   # free memory
+        x
     }
 
 ##
