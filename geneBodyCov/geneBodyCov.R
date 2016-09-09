@@ -76,10 +76,9 @@ cvg <-
                                   no=0,
                                   yes=1,
                                   reverse=2)
-        x <- coverage(aln)
-        rm(aln); gc()   # free memory
-        x
+        coverage(aln)
     }
+rm(aln); gc()   # free memory
 
 ##
 ## subset from the coverage only the gene regions, and calculate the binned coverage
