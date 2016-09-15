@@ -43,7 +43,7 @@ parseArgs <- function(args, string, default=NULL, convert="as.character") {
 args     <- commandArgs(T)
 FOLDER   <- parseArgs(args, "folder=", "./")       # folder containing the bam files
 PATTERN  <- parseArgs(args, "pattern=", "\\.bam$") # files to be analyzed. Default: all bams
-GTF      <- parseArgs(args, "gtf=")               # the GTF file
+GTF      <- parseArgs(args, "gtf=")                # the GTF file
 OUT      <- parseArgs(args, "out=", "RNAtypes")    # output filename
 PRE      <- parseArgs(args, "pre=", "")            # pattern to remove from the file name
 SUF      <- parseArgs(args, "suf=", "\\.bam$")     # pattern to remove from the file name
@@ -61,8 +61,8 @@ if(length(args) == 0 | args[1] == "-h" | args[1] == "--help")
                "  [pattern=\"\\\\.bam$\"] : analyze only files matching this pattern (valid R regular expression)\n", 
                "  <gtf=gencode.gtf>   : gtf annotation file. Can be a compressed file\n", 
                "  [out=RNAtypes]      : output filename\n", 
-               "  [pre=\"\"]            : prefix to be removed from sample name (for plotting)\n", 
-               "  [suf=\"\\\\.bam$\"]     : suffix to be removed from sample name (for plotting)\n", 
+               "  [pre=\"\"]          : prefix to be removed from sample name (for plotting)\n", 
+               "  [suf=\"\\\\.bam$\"] : suffix to be removed from sample name (for plotting)\n", 
                "  [paired=no]         : no|yes\n", 
                "  [stranded=no]       : no|yes|reverse\n", 
                "  [multimap=NONE]     : count multimappers? ALL|UNAMBIGUOUS|NONE|RANDOM\n", 
@@ -80,6 +80,7 @@ files <- list.files(path=FOLDER, pattern=PATTERN)
 files <- files[grep(PATTERN, files)]
 samples <- gsub(PRE, "", gsub(SUF, "", files))
 if(length(files) == 0) stop(paste("Dir", FOLDER, "does not contain files matching the pattern. Nothing to do"))
+if(!dir.exists(dirname(OUT))) dir.create(dirname(OUT), showWarnings=FALSE, recursive=TRUE)
 
 ##
 ## load libraries
