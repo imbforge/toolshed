@@ -53,14 +53,6 @@ if(is.na(STRANDED) | !(grepl("no|yes|reverse", STRANDED))) stop("Stranded has to
 if(is.na(THREADS))  stop("Threads has to be a number")
 
 ##
-## Read and flatten the gtf file
-##
-# read and strip input gtf file
-gtf <- import.gff(GENESGTF, format="gtf", feature.type="exon")
-gtf <- reduce(split(gtf, elementMetadata(gtf)$gene_id))
-gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes shorter than 100bp
-
-##
 ## read input bam file and calculate the coverage
 ##
 cvg <-
@@ -79,6 +71,14 @@ cvg <-
         coverage(aln)
     }
 rm(aln); gc()   # free memory
+
+##
+## Read and flatten the gtf file
+##
+gtf <- import.gff(GENESGTF, format="gtf", feature.type="exon")
+gtf <- reduce(split(gtf, elementMetadata(gtf)$gene_id))
+gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes shorter than 100bp
+gtf <- keepSeqlevels(gtf, seqlevels(cvg))   # drop genes in chromosomes which we don't have coverage
 
 ##
 ## subset from the coverage only the gene regions, and calculate the binned coverage
