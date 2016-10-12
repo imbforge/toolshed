@@ -86,8 +86,11 @@ gtf <- keepSeqlevels(gtf, seqlevels(cvg))   # drop genes in chromosomes which we
 rangeCov <- mclapply(gtf, function(gene) {
   
   # get the absolute covarage for the current gene
+  # strandedness of library is already taken into account in the coverage analysis (cvg <- ...)
+
+  # minus strand genes need to be flipped
   s <- as.character(runValue(strand(gene))[[1L]])
-  if((STRANDED != "reverse" && s == "-") || (STRANDED == "reverse" && s == "+")) {
+  if(s == "-") {
     x <- rev(unlist(cvg[gene], use.names=FALSE))
   } else {
     x <- unlist(cvg[gene], use.names=FALSE) 
