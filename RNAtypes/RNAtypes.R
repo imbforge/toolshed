@@ -18,7 +18,7 @@
 ##   suf=<suffix to be removed from sample name (for plotting)>
 ##   paired=<paired end experiment?>
 ##   stranded=<stranded experiment?>
-##   multimap=<count all multimappers>
+##   multimap=<how to deal with multimappers (loci and feature)>
 ##   ftype=<feature type to be counted on the GTF file>
 ##   ftypecol=<column containing the biotype information in the GTF file>
 ##   cores=<number of cores to use>
@@ -49,7 +49,7 @@ PRE      <- parseArgs(args, "pre=", "")            # pattern to remove from the 
 SUF      <- parseArgs(args, "suf=", "\\.bam$")     # pattern to remove from the file name
 PAIRED   <- parseArgs(args, "paired=", "no")       # strand specific assay
 STRANDED <- parseArgs(args, "stranded=", "no")     # strand specific assay
-MMAPPERS <- parseArgs(args, "multimap=", "NONE")   # count all multimappers
+MMAPPERS <- parseArgs(args, "multimap=", "NONE")   # multimappers (loci and feature): ALL|UNAMBIGUOUS|NONE|RANDOM
 FTYPE    <- parseArgs(args, "ftype=", "exon")      # feature type on the GTF file
 FTYPECOL <- parseArgs(args, "ftypecol=", "gene_type")  # column containing the biotype
 CORES    <- parseArgs(args, "cores=", 1, "as.numeric") # number of cores to use
@@ -65,7 +65,7 @@ if(length(args) == 0 | args[1] == "-h" | args[1] == "--help")
                "  [suf=\"\\\\.bam$\"] : suffix to be removed from sample name (for plotting)\n", 
                "  [paired=no]         : no|yes\n", 
                "  [stranded=no]       : no|yes|reverse\n", 
-               "  [multimap=NONE]     : count multimappers? ALL|UNAMBIGUOUS|NONE|RANDOM\n", 
+               "  [multimap=NONE]     : multimappers (loci and feature): ALL|UNAMBIGUOUS|NONE|RANDOM\n", 
                "  [ftype=exon]        : feature type on the GTF file to count on (exon|gene|...)\n", 
                "  [ftypecol=gene_type]: column name in the GTF file containing the biotype info\n", 
                "  [cores=1]           : number of cores to use"))
