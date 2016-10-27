@@ -37,11 +37,11 @@ cores=1             : number of cores to use
 
 The total number of tag counts per feature described in the GTF file:
 
-![percentage](RNAtypes.counts.per.png)
+![raw](RNAtypes.counts.raw.png)
 
 The percentage of tags falling in each feature described in the GTF file:
 
-![raw](RNAtypes.counts.raw.png)
+![percentage](RNAtypes.counts.per.png)
 
 Also the number reported in the plots are stored as a csv table
 
