@@ -25,7 +25,6 @@ parseArgs <- function(args,string,default=NULL,convert="as.character") {
 
 args  <- commandArgs(T)
 IN    <- parseArgs(args,"in=")
-OUT   <- parseArgs(args,"out=")
 TABLE <- parseArgs(args,"table=")
 
 if(length(args) == 0 | args[1] == "-h" | args[1] == "--help")
