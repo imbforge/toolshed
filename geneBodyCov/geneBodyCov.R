@@ -78,7 +78,7 @@ rm(aln); gc()   # free memory
 gtf <- import.gff(GENESGTF, format="gtf", feature.type="exon")
 gtf <- reduce(split(gtf, elementMetadata(gtf)$gene_id))
 gtf <- gtf[sapply(gtf, function(x) sum(width(x))) > 100]  # kick out genes shorter than 100bp
-gtf <- keepSeqlevels(gtf, intersect(seqlevels(gtf), seqlevels(cvg)))   # drop genes in chromosomes which we don't have coverage
+gtf <- keepSeqlevels(gtf, intersect(seqlevels(gtf), seqlevels(cvg)), pruning.mode="coarse")   # drop genes in chromosomes which we don't have coverage
 
 ##
 ## subset from the coverage only the gene regions, and calculate the binned coverage
