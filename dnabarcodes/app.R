@@ -35,14 +35,15 @@ ui <- fluidPage(
    sidebarLayout(
      # Sidebar with file input panel and file contents display table
      sidebarPanel(
+        downloadButton("downloadExampleFile", "Download Example File"),
         fileInput("barcodesfile",
-                  "Select barcodes file (format: id <tab> sequence)",
+                  "Upload barcodes file (format: id <tab> sequence)",
                   multiple = FALSE,
                   accept = c("text/tsv",
                              "text/tab-separated-values,text/plain",
                              ".txt")),
         sliderInput("minimumDistance",
-                  "Minimum acceptable distance",
+                  "Minimum required distance",
                   min = 0, max = 9,
                   value = 3),
         plotOutput("seqlogoPlot"),
@@ -99,18 +100,29 @@ server <- function(input, output) {
   })
   
   
+  ## Handle downloading of example file
+  
+  output$downloadExampleFile <- downloadHandler(
+    filename = "sample_barcodes.txt",
+    content = function(tmpfilepath) {
+      file.copy(from = "sample_barcodes.txt", to = tmpfilepath)
+    },
+    contentType = "text/tsv"
+  )
+  
+  
   ## Create sequence logo
   
   output$seqlogoPlot <- renderPlot({
-     
-     res <- datasetInput()
-     
-     ggseqlogo(res$df[,2], 
-               col_scheme = nextseq_basecolors,
-               method = 'prob',
-               font = 'helvetica_bold') +
-       ggtitle("Barcodes sequence logo") +
-       theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
+    
+    res <- datasetInput()
+    
+    ggseqlogo(res$df[,2], 
+              col_scheme = nextseq_basecolors,
+              method = 'prob',
+              font = 'helvetica_bold') +
+      ggtitle("Barcodes sequence logo") +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20))
   })
   
   
