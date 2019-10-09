@@ -89,8 +89,7 @@ rangeCov <- mclapply(gtf, function(gene) {
   # strandedness of library is already taken into account in the coverage analysis (cvg <- ...)
 
   # minus strand genes need to be flipped
-  s <- as.character(runValue(strand(gene))[[1L]])
-  if(s == "-") {
+  if(decode(strand(gene)) == "-") {
     x <- rev(unlist(cvg[gene], use.names=FALSE))
   } else {
     x <- unlist(cvg[gene], use.names=FALSE) 
@@ -98,8 +97,7 @@ rangeCov <- mclapply(gtf, function(gene) {
   
   # split the gene in 100 bins and calculate the avg coverage per bin
   bins <- cut(1:length(x), 100)
-  x <- c(rep(runValue(x), runLength(x)))  # uncompress
-  x <- tapply(x, bins, mean)
+  x <- tapply(decode(x), bins, mean)
   
   # calculate the percentage of coverage per position
   if(max(x) > 0) x / max(x) else x
